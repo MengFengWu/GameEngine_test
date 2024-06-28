@@ -10,9 +10,11 @@ This is a game engine design for NTUEE game console.
 └──engine/
    ├──include/
    │  ├──Engine.h
-   │  └──ResourceManager.h
+   │  ├──ResourceManager.h
+   │  └──RenderManager.h
    ├──src/
-   │  └──ResourceManager.c
+   │  ├──ResourceManager.c
+   │  └──RenderManager.c
    ├──CMakeLists.txt
    └──README.md
 ```
@@ -20,6 +22,7 @@ This is a game engine design for NTUEE game console.
 ### How to use?
 
 (Running on ESP32 has not been tested yet)
+You can visit the [tutorial](https://hackmd.io/@uzF57KwOT5SnkVGD3Ppheg/Bkq8tLnLC) here, which is not completed yet.
 
 ### Develop
 
@@ -29,11 +32,13 @@ If you perfer developing without using ESP32, you can use following Structure
 ├──components/engine/
 │  ├──include/
 │  │  ├──Engine.h
-│  │  └──ResourceManager.h
-│  ├──src/
-│  │  └──ResourceManager.c
-│  ├──CMakeLists.txt
-│  └──README.md
+│  │  ├──ResourceManager.h
+│  │  └──RenderManager.h
+│  └──src/
+│     ├──ResourceManager.c
+│     └──RenderManager.c
+├──files/
+│  └──data.h
 └──main/
    └──main.c
 ```

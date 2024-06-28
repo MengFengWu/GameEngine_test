@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 #define MAX_OBJECT_COUNT 200
+#define MAX_FILENAME_LENGTH 64
 
 //Enum to indicate resource type
 typedef enum{
@@ -21,12 +22,14 @@ typedef enum{
 /*
     Resource class, indicate a resource object.
 */
-typedef struct
+typedef struct resource
 {
     uint8_t mResourceID;
-    char mFileName[64];
+    char mFileName[MAX_FILENAME_LENGTH];
     RESOURCE_TYPE mType;
-    void (*new)(Resource*, uint8_t, char[], RESOURCE_TYPE);
+
+    //Constructor for Resource
+    void (*new)(struct resource*, uint8_t, char[], RESOURCE_TYPE);
     /*
         The following function is required for each derived class.:
         void (*load)(TYPE*);
@@ -34,32 +37,34 @@ typedef struct
     */
 }Resource;
 
+//Constructor for Resource
 void resourceNew(Resource*, uint8_t, char[], RESOURCE_TYPE);
 
 /*
     ResourceManager class, manages resource objects.
 */
-typedef struct
+typedef struct resourceManager
 {
     uint8_t mResourceCount;
-    void (*new)(ResourceManager*);
+    void (*new)(struct resourceManager*);
 
     //TO-DO: use a good data structure (name mResources) to store mResource.
     //Currently I use array of length 200, so it might overflow.
     Resource mResources[MAX_OBJECT_COUNT];
 
-    //Finds resource by its ID, return NULL if not found.
-    Resource* (*findResourcebyID)(ResourceManager*, uint8_t); 
+    //Finds resource by its ID, returns NULL if not found.
+    Resource* (*findResourceByID)(struct resourceManager*, uint8_t); 
+    //Finds resource by its name, returns NULL if not found.
+    Resource* (*findResourceByName)(struct resourceManager*, char[]);
 
-    //Clears all resource objects. Not used as there's nothing to be allowcated or to be free.
-    //void (*clear)(struct ResourceManager*);
-
-    //Add resource.
-    void (*load)(ResourceManager*);
+    //Adds resource.
+    void (*addResource)(struct resourceManager*, char[], RESOURCE_TYPE);
 }ResourceManager;
 
+//Constructor for ResourceManager
 void resourceManagerNew(ResourceManager*);
-Resource* resourceManagerFindResourcebyID(ResourceManager*, uint8_t); 
-void resourceManagerLoad(ResourceManager*);
+Resource* resourceManagerFindResourceByID(ResourceManager*, uint8_t);
+Resource* resourceManagerFindResourceByName(ResourceManager*, char[]); 
+void resourceManagerAddResource(ResourceManager*, char[], RESOURCE_TYPE);
 
 #endif /* _RESOURCEMANAGER_H_ */
