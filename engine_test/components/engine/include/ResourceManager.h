@@ -16,7 +16,7 @@ typedef enum{
     RESOURCE_NULL = 0,
     RESOURCE_GRAPHIC = 1,
     RESOURCE_TEXT = 2,
-    //RESOURCE_AUDIO = 3,
+    RESOURCE_AUDIO = 3,
 }RESOURCE_TYPE; 
 
 /*

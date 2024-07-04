@@ -2,7 +2,7 @@
 
 ### Description
 
-This is a game engine design for NTUEE game console.
+This is a game engine designed for NTUEE game console.
 
 ### Architecture
 
@@ -42,11 +42,24 @@ If you perfer developing without using ESP32, you can use following Structure
 └──main/
    └──main.c
 ```
-include this header file in `main.c`
+Include your own datas in `data.h`. For example,
+```C
+//in data.h
+#include <stdint.h>
+
+uint8_t testData[] = 
+{
+    1,2,3,
+    4,5,6,
+    7,8,9
+};
+```
+then include these header files in `main.c`
 ```C
 #include "../components/engine/include/Engine.h"
+#include "../files/data.h"
 ```
-when compiling, run following command
+When compiling, run following command
 ```
 gcc -Wall -Wextra -g3 [file_location]/main/main.c [file_location]/components/engine/src/ResourceManager.c [file_location]/components/engine/src/RenderManager.c  -I[file_location]/components/engine/include -o [file_location]/main/output/main
 ```

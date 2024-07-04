@@ -11,6 +11,17 @@
     "new": "c",
     "stop_token": "c",
     "functional": "c",
-    "variant": "c"
-  }
+    "variant": "c",
+    "stdint.h": "c",
+    "decode_png.h": "c",
+    "spi_master.h": "c",
+    "cstdio": "c",
+    "fstream": "c",
+    "compare": "c",
+    "cstdint": "c",
+    "rendermanager.h": "c",
+    "st7789.h": "c"
+  },
+  "idf.flashType": "UART",
+  "idf.adapterTargetName": "esp32"
 }

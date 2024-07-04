@@ -1,7 +1,20 @@
 #include <stdio.h>
 #include <stdint.h>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_spiffs.h"
+
+#include "../components/st7789/include/st7789.h"
+#include "../components/fontx/include/fontx.h"
+#include "../components/pngle/include/pngle.h"
+#include "../components/decode_png/include/decode_png.h"
+
 #include "../components/engine/include/Engine.h"
-#include "../files/data.h"
+
+//#include "../files/people.h"
+
+uint16_t *people;
 
 //--Person class for testing--//
 typedef struct person
@@ -34,11 +47,17 @@ void init()
     renderManagerNew(&gRenderManager);
     printf("%s\n", "Manager initialization finished.");
 
-    gRenderManager.addResource(&gRenderManager, &gResourceManager, "person", 3, 3, testData);
+    
+    people = malloc(50*50*sizeof(uint16_t));
+    for(uint16_t i = 0; i < 2500; i++)
+    {
+        people[i] = 30;
+    }
+    gRenderManager.addImage(&gRenderManager, &gResourceManager, "person", people, 50, 50);
     printf("%s\n", "Resource initialization finished.");
 }
 
-int main(void)
+void app_main(void)
 {
     init();
     Person John;

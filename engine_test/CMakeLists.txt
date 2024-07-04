@@ -3,4 +3,6 @@
 cmake_minimum_required(VERSION 3.16)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(blink)
+project(ENGINE_TEST)
+
+# spiffs_create_partition_image(storage font FLASH_IN_PROJECT)
