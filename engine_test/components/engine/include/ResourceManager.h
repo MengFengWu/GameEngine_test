@@ -8,7 +8,7 @@
 #define _RESOURCEMANAGER_H_
 
 #include <stdint.h>
-#define MAX_OBJECT_COUNT 200
+#define MAX_OBJECT_COUNT 20
 #define MAX_FILENAME_LENGTH 64
 
 //Enum to indicate resource type

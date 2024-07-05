@@ -20,8 +20,11 @@
     "compare": "c",
     "cstdint": "c",
     "rendermanager.h": "c",
-    "st7789.h": "c"
+    "st7789.h": "c",
+    "task.h": "c",
+    "freertos.h": "c"
   },
   "idf.flashType": "UART",
-  "idf.adapterTargetName": "esp32"
+  "idf.adapterTargetName": "esp32",
+  "idf.port": "/dev/tty.usbserial-10"
 }

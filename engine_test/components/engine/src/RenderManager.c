@@ -9,6 +9,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "../include/ResourceManager.h"
 #include "../include/RenderManager.h"
 
@@ -18,29 +19,51 @@
 #include "../../pngle/include/pngle.h"
 #include "../../decode_png/include/decode_png.h"
 
-#define MAX_OBJECT_COUNT 200
-
 /*
     RenderResource class
 */
-void renderResourceNew(RenderResource* obj, uint8_t ID, Resource* resource)
+void renderResourceNew(RenderResource* obj, uint8_t ID, Resource* resource, uint16_t width, uint16_t height)
 {
     obj->new = renderResourceNew;
     obj->mRenderResourceID = ID;
+    obj->mWidth = width;
+    obj->mHeight = height;
     obj->loadImage = renderResourceLoadImage;
-    obj->loadFont = renderResourceLoadFont;
+    //obj->loadFont = renderResourceLoadFont;
     //obj->unload = renderResourceUnload;
     obj->baseResource = resource;
     return;
 }
 
-void renderResourceLoadImage(RenderResource* obj, uint16_t* image, uint16_t width, uint16_t height)
+void renderResourceSetLoadFunction(RenderResource* obj, void (*function)(struct renderResource*))
 {
-    obj->mWidth = width;
-    obj->mHeight = height;
-    obj->mImage = image;
+    obj->loadImage = function;
 }
 
+//Template for loading functions
+void renderResourceLoadImage(RenderResource* obj)
+{
+    //Allocate memory to obj->mImage
+    if(obj->mImage == NULL)
+    {
+        obj->mImage = malloc(obj->mWidth*obj->mHeight*sizeof(uint16_t));
+    }
+    else return;
+
+    //Data of the image
+    uint16_t file[] = {
+        //(Your data should be place in here.)
+    };
+    
+    //Assign values
+    for(uint16_t i = 0; i < obj->mWidth*obj->mHeight; i++)
+    {
+        obj->mImage[i] = file[i];
+    }
+    return;
+}
+
+/*
 void renderResourceLoadFont(RenderResource* obj)
 {
     if(obj->baseResource->mType == RESOURCE_TEXT)
@@ -49,6 +72,7 @@ void renderResourceLoadFont(RenderResource* obj)
     }
     return;
 }
+*/
 
 /*
 void renderResourceUnload(RenderResource* obj)
@@ -64,6 +88,8 @@ void renderResourceUnload(RenderResource* obj)
 void renderObjectNew(RenderObject* obj, RenderResource* renderResource, int16_t posX, int16_t posY, uint8_t visible)
 {
     obj->mRenderResource = renderResource;
+    obj->mPrePosX = posX;
+    obj->mPrePosY = posY;
     obj->mPosX = posX;
     obj->mPosY = posY;
     obj->mColor = WHITE;
@@ -72,8 +98,9 @@ void renderObjectNew(RenderObject* obj, RenderResource* renderResource, int16_t 
     obj->new = renderObjectNew;
     obj->setPos = renderObjectSetPos;
     obj->setColor = renderObjectSetColor;
-    obj->setText = renderObjectSetText;
-    obj->render = renderObjectRender;
+    obj->setVisible = renderObjectSetVisible;
+    //obj->setText = renderObjectSetText;
+    //obj->render = renderObjectRender;
     return;
 }
 
@@ -93,6 +120,13 @@ void renderObjectSetColor(RenderObject* obj, uint16_t color)
     return;
 }
 
+void renderObjectSetVisible(RenderObject* obj, uint8_t visible)
+{
+    obj->mVisible = visible;
+    return;
+}
+
+/*
 void renderObjectSetText(RenderObject* obj, char text[])
 {
     obj->mPrePosX = obj->mPosX;
@@ -100,7 +134,9 @@ void renderObjectSetText(RenderObject* obj, char text[])
     if(obj->mRenderResource->baseResource->mType == RESOURCE_TEXT) strcpy((char*)(obj->mText), text);
     return;
 }
+*/
 
+/*
 void renderObjectRender(RenderObject* obj, TFT_t* TFT_t)
 {
     if(obj->mRenderResource->baseResource->mType == RESOURCE_GRAPHIC)
@@ -118,6 +154,7 @@ void renderObjectRender(RenderObject* obj, TFT_t* TFT_t)
     }
     return;
 }
+*/
 
 /*
     RenderManager class
@@ -126,10 +163,12 @@ void renderManagerNew(RenderManager* obj)
 {
     spi_master_init(&(obj->TFT_t), CONFIG_MOSI_GPIO, CONFIG_SCLK_GPIO, CONFIG_CS_GPIO, CONFIG_DC_GPIO, CONFIG_RESET_GPIO, CONFIG_BL_GPIO);
     lcdInit(&(obj->TFT_t), CONFIG_WIDTH, CONFIG_HEIGHT, CONFIG_OFFSETX, CONFIG_OFFSETY);
+    lcdFillScreen(&(obj->TFT_t), BLACK);
     
     obj->new = renderManagerNew;
 
-    obj->mScreen = malloc(SCREEN_WIDTH*SCREEN_HEIGHT*sizeof(uint8_t));
+    //obj->mScreen = calloc(SCREEN_WIDTH*SCREEN_HEIGHT, sizeof(uint8_t));
+    //lcdDrawFull(&(obj->TFT_t), 0, 0, obj->mScreen, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     obj->mRenderResourceCount = 0;
     obj->mRenderObjectCount = 0;
@@ -141,16 +180,17 @@ void renderManagerNew(RenderManager* obj)
     obj->findRenderResourceByID = renderManagerFindRenderResourceByID;
     obj->findRenderResourceByName = renderManagerFindRenderResourceByName;
     obj->addImage = renderManagerAddImage;
-    obj->addFont = renderManagerAddFont;
+    //obj->addFont = renderManagerAddFont;
     obj->addObject = renderManagerAddObject;
     obj->removeObject = renderManagerRemoveObject;
     obj->copy = renderManagerCopy;
     obj->readDown = renderManagerReadDown;
     obj->readUp = renderManagerReadUp;
+    obj->readFull = renderManagerReadFull;
     obj->clear = renderManagerClear;
     obj->update = renderManagerUpdate;
-    obj->renderAllText = renderManagerRenderAllText;
-    obj->renderAllObject = renderManagerRenderAllObject;
+    //obj->renderAllText = renderManagerRenderAllText;
+    //obj->renderAllObject = renderManagerRenderAllObject;
     return;
 }
 
@@ -175,29 +215,38 @@ RenderResource* renderManagerFindRenderResourceByName(RenderManager* obj, char n
     return NULL;
 }
 
-void renderManagerAddImage(RenderManager* obj, ResourceManager* resourceManager, char name[], uint16_t* image, uint16_t width, uint16_t height)
+void renderManagerAddImage(RenderManager* obj, ResourceManager* resourceManager, char name[], void (*loadFunction)(struct renderResource*), uint16_t width, uint16_t height)
 {
     resourceManager->addResource(resourceManager, name, RESOURCE_GRAPHIC);
+    /*
     RenderResource newRenderResource;
-    renderResourceNew(&newRenderResource, obj->mRenderResourceCount, resourceManager->findResourceByID(resourceManager, (resourceManager->mResourceCount) - 1));
-    renderResourceLoadImage(&newRenderResource, image, width, height);
+    renderResourceNew(&newRenderResource, obj->mRenderResourceCount, resourceManager->findResourceByID(resourceManager, (resourceManager->mResourceCount) - 1), width, height);
+    renderResourceSetLoadFunction(&newRenderResource, loadFunction);
+    newRenderResource.loadImage(&newRenderResource);
+    */
 
-    obj->mRenderResources[obj->mRenderResourceCount] = newRenderResource;
+    renderResourceNew(&obj->mRenderResources[obj->mRenderResourceCount], obj->mRenderResourceCount, resourceManager->findResourceByID(resourceManager, (resourceManager->mResourceCount) - 1), width, height);
+    renderResourceSetLoadFunction(&obj->mRenderResources[obj->mRenderResourceCount], loadFunction);
+    obj->mRenderResources[obj->mRenderResourceCount].loadImage(&obj->mRenderResources[obj->mRenderResourceCount]);
+
+    //obj->mRenderResources[obj->mRenderResourceCount] = newRenderResource;
     obj->mRenderResourceCount++;
     return;
 }
 
+/*
 void renderManagerAddFont(RenderManager* obj, ResourceManager* resourceManager, char name[])
 {
     resourceManager->addResource(resourceManager, name, RESOURCE_TEXT);
     RenderResource newRenderResource;
-    renderResourceNew(&newRenderResource, obj->mRenderResourceCount, resourceManager->findResourceByID(resourceManager, (resourceManager->mResourceCount) - 1));
+    renderResourceNew(&newRenderResource, obj->mRenderResourceCount, resourceManager->findResourceByID(resourceManager, (resourceManager->mResourceCount) - 1), 0, 0);
     renderResourceLoadFont(&newRenderResource);
 
     obj->mRenderResources[obj->mRenderResourceCount] = newRenderResource;
     obj->mRenderResourceCount++;
     return;
 }
+*/
 
 void renderManagerAddObject(RenderManager* obj, RenderObject* renderObject)
 {
@@ -205,36 +254,40 @@ void renderManagerAddObject(RenderManager* obj, RenderObject* renderObject)
     (obj->mInitRenderObject.prevObj)->nextObj = renderObject;
     renderObject->nextObj = &(obj->mInitRenderObject);
     obj->mInitRenderObject.prevObj = renderObject;
+    //printf("%s\n", "A object has been added to list.");
+    obj->update(obj, renderObject);
+    return;
 }
 
 void renderManagerRemoveObject(RenderManager* obj, RenderObject* renderObject)
 {
+    uint8_t tempVisible = renderObject->mVisible;
+    renderObject->setVisible(renderObject, 0);
+    obj->update(obj, renderObject);
+    renderObject->setVisible(renderObject, tempVisible);
     renderObject->prevObj->nextObj = renderObject->nextObj;
     renderObject->nextObj->prevObj = renderObject->prevObj;
     renderObject->prevObj = NULL;
     renderObject->nextObj = NULL;
-    printf("%s", "Revome an object, named ");
-    printf("%s\n", renderObject->mRenderResource->baseResource->mFileName);
 }
 
 void renderManagerCopy(RenderManager* obj, RenderObject* renderObject, int16_t posX, int16_t posY, uint16_t width, uint16_t height)
 {
+    
+    //printf("%s\n", "Start copying...");
     if(renderObject->mRenderResource->baseResource->mType == RESOURCE_GRAPHIC)
     {
-        if((posX <= renderObject->mPosX && renderObject->mPosX < (posX + width)) &&
-            (posY <= renderObject->mPosY && renderObject->mPosY < (posY + height)))
+        for(uint16_t i = (renderObject->mPosX >= posX ? 0 : posX - renderObject->mPosX); i < (renderObject->mRenderResource->mWidth); i++)
         {
-            for(uint16_t i = 0; i < (renderObject->mRenderResource->mWidth); i++)
+            if(renderObject->mPosX + i >= width + posX) break;
+            for(uint16_t j = (renderObject->mPosY >= posY ? 0 : posY - renderObject->mPosY); j < (renderObject->mRenderResource->mHeight); j++)
             {
-                for(uint16_t j = 0; j < (renderObject->mRenderResource->mHeight); j++)
+                if(renderObject->mPosY + j >= height + posY) break;
+                if(renderObject->mRenderResource->mImage[i + j * renderObject->mRenderResource->mWidth] != TRANSPARENT)
                 {
-                    if(renderObject->mRenderResource->mImage[i * renderObject->mRenderResource->mWidth + j] != TRANSPARENT)
-                    {
-                        obj->mScreen[(renderObject->mPosX + i) + (renderObject->mPosY + j)] = renderObject->mRenderResource->mImage[i * renderObject->mRenderResource->mWidth + j];
-                    }
-                    if(renderObject->mPosY + j >= posY + height) break;
+                    obj->mScreen[(i + renderObject->mPosX - posX) + (j + renderObject->mPosY - posY) * width] = 
+                        renderObject->mRenderResource->mImage[i + j * renderObject->mRenderResource->mWidth];
                 }
-                if(renderObject->mPosX + i >= posX + width) break;
             }
         }
     }
@@ -243,25 +296,58 @@ void renderManagerCopy(RenderManager* obj, RenderObject* renderObject, int16_t p
 
 void renderManagerReadDown(RenderManager* obj, RenderObject* renderObject)
 {
+    obj->mScreen = calloc(renderObject->mRenderResource->mWidth*renderObject->mRenderResource->mHeight, sizeof(uint16_t));
     RenderObject currentNode = obj->mInitRenderObject;
     while(currentNode.nextObj->mRenderResource != NULL)
     {
-        if(currentNode.nextObj->mVisible == 1) obj->copy(obj, currentNode.nextObj, renderObject->mPrePosX, renderObject->mPrePosY, renderObject->mRenderResource->mWidth, renderObject->mRenderResource->mHeight);
+        if(currentNode.nextObj->mVisible == 1)
+        {
+            obj->copy(obj, currentNode.nextObj, renderObject->mPrePosX, renderObject->mPrePosY, renderObject->mRenderResource->mWidth, renderObject->mRenderResource->mHeight);
+        }
         currentNode = *(currentNode.nextObj);
     }
-    lcdDrawPNG(&(obj->TFT_t), renderObject->mPrePosX, renderObject->mPrePosY, (obj->mScreen + (renderObject->mPrePosX * SCREEN_WIDTH + renderObject->mPrePosY)), renderObject->mRenderResource->mWidth, renderObject->mRenderResource->mHeight);
+    lcdDrawPNG(&(obj->TFT_t), renderObject->mPrePosX, renderObject->mPrePosY, obj->mScreen, renderObject->mRenderResource->mWidth, renderObject->mRenderResource->mHeight);
+    free(obj->mScreen);
     return;
 }
 
 void renderManagerReadUp(RenderManager* obj, RenderObject* renderObject)
 {
+    obj->mScreen = calloc(renderObject->mRenderResource->mWidth*renderObject->mRenderResource->mHeight, sizeof(uint16_t));
     RenderObject currentNode = obj->mInitRenderObject;
     while(currentNode.nextObj->mRenderResource != NULL)
     {
-        if(currentNode.nextObj->mVisible == 1) obj->copy(obj, currentNode.nextObj, renderObject->mPosX, renderObject->mPosY, renderObject->mRenderResource->mWidth, renderObject->mRenderResource->mHeight);
+        if(currentNode.nextObj->mVisible == 1)
+        {
+            obj->copy(obj, currentNode.nextObj, renderObject->mPosX, renderObject->mPosY, renderObject->mRenderResource->mWidth, renderObject->mRenderResource->mHeight);
+        }
         currentNode = *(currentNode.nextObj);
     }
-    lcdDrawPNG(&(obj->TFT_t), renderObject->mPosX, renderObject->mPosY, (obj->mScreen + (renderObject->mPosX * SCREEN_WIDTH + renderObject->mPosY)), renderObject->mRenderResource->mWidth, renderObject->mRenderResource->mHeight);
+    lcdDrawPNG(&(obj->TFT_t), renderObject->mPosX, renderObject->mPosY, obj->mScreen, renderObject->mRenderResource->mWidth, renderObject->mRenderResource->mHeight);
+    free(obj->mScreen);
+    return;
+}
+
+void renderManagerReadFull(RenderManager* obj, RenderObject* renderObject)
+{
+    int16_t minX = renderObject->mPrePosX >= renderObject->mPosX ? renderObject->mPosX : renderObject->mPrePosX;
+    int16_t maxX = renderObject->mPrePosX <= renderObject->mPosX ? renderObject->mPosX : renderObject->mPrePosX;
+    int16_t minY = renderObject->mPrePosY >= renderObject->mPosY ? renderObject->mPosY : renderObject->mPrePosY;
+    int16_t maxY = renderObject->mPrePosY <= renderObject->mPosY ? renderObject->mPosY : renderObject->mPrePosY;
+    
+    obj->mScreen = calloc((maxX - minX + renderObject->mRenderResource->mWidth) * (maxY - minY + renderObject->mRenderResource->mHeight), sizeof(uint16_t));
+    
+    RenderObject currentNode = obj->mInitRenderObject;
+    while(currentNode.nextObj->mRenderResource != NULL)
+    {
+        if(currentNode.nextObj->mVisible == 1)
+        {
+            obj->copy(obj, currentNode.nextObj, minX, minY, maxX - minX + renderObject->mRenderResource->mWidth, maxY - minY + renderObject->mRenderResource->mHeight);
+        }
+        currentNode = *(currentNode.nextObj);
+    }
+    lcdDrawPNG(&(obj->TFT_t), minX, minY, obj->mScreen, maxX - minX + renderObject->mRenderResource->mWidth, maxY - minY + renderObject->mRenderResource->mHeight);
+    free(obj->mScreen);
     return;
 }
 
@@ -271,20 +357,31 @@ void renderManagerClear(RenderManager* obj)
     {
         obj->removeObject(obj, obj->mInitRenderObject.nextObj);
     }
-    printf("%s\n", "Finish clearing.");
     return;
 }
 
 void renderManagerUpdate(RenderManager* obj, RenderObject* renderObject)
 {
-    uint8_t tempVisible = renderObject->mVisible;
-    obj->readUp(obj, renderObject);
-    renderObject->setVisible(renderObject, 0);
-    obj->readDown(obj, renderObject);
-    renderObject->setVisible(renderObject, tempVisible);
+    if(abs(renderObject->mPosX - renderObject->mPrePosX) < renderObject->mRenderResource->mWidth
+        && abs(renderObject->mPosY - renderObject->mPrePosY) < renderObject->mRenderResource->mHeight)
+    {
+        obj->readFull(obj, renderObject);
+    }
+    else
+    {
+        uint8_t tempVisible = renderObject->mVisible;
+        renderObject->setVisible(renderObject, 0);
+        obj->readDown(obj, renderObject);
+        renderObject->setVisible(renderObject, tempVisible);
+        obj->readUp(obj, renderObject);
+    }
+
+    renderObject->mPrePosX = renderObject->mPosX;
+    renderObject->mPrePosY = renderObject->mPosY;
     return;
 }
 
+/*
 void renderManagerRenderAllText(RenderManager* obj)
 {
     RenderObject currentNode = obj->mInitRenderObject;
@@ -295,7 +392,9 @@ void renderManagerRenderAllText(RenderManager* obj)
     }
     return;
 }
+*/
 
+/*
 void renderManagerRenderAllObject(RenderManager* obj)
 {
     RenderObject currentNode = obj->mInitRenderObject;
@@ -309,5 +408,6 @@ void renderManagerRenderAllObject(RenderManager* obj)
     printf("%s\n", "Finish rendering.");
     return;
 }
+*/
 
 #endif /* _RENDERMANAGER_C_ */

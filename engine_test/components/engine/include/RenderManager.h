@@ -16,11 +16,10 @@
 #include "../../pngle/include/pngle.h"
 #include "../../decode_png/include/decode_png.h"
 
-#define MAX_OBJECT_COUNT 200
 #define MAX_TEXT_LENGTH 64
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 240
-#define TRANSPARENT 1
+#define SCREEN_WIDTH 240
+#define SCREEN_HEIGHT 320
+#define TRANSPARENT 0x0001
 
 /*
     RenderResource class (derived from Resource), indicate a resource which is to be rendered.
@@ -35,24 +34,28 @@ typedef struct renderResource
     //Image file(for graphic object only)
     uint16_t* mImage;
     //Decoded font file (for text object only)
-    FontxFile mFont[2];
+    //FontxFile mFont[2];
 
     //Constructor for RenderResource
-    void (*new)(struct renderResource*, uint8_t, Resource*);
+    void (*new)(struct renderResource*, uint8_t, Resource*, uint16_t, uint16_t);
     
+    //sets loadImage function
+    void (*setLoadFunction)(struct renderResource*, void (struct renderResource*));
+
     //loadImage function, load image. (for graphic object only)
-    void (*loadImage)(struct renderResource*, uint16_t*, uint16_t, uint16_t);
+    void (*loadImage)(struct renderResource*);
     //loadFont function, load font. (for text object only)
-    void (*loadFont)(struct renderResource*);
+    //void (*loadFont)(struct renderResource*);
 
     //unload function, set the image pointer to NULL.
     //void (*unload)(struct renderResource*);
 }RenderResource;
 
 //Constructor for RenderResource
-void renderResourceNew(RenderResource*, uint8_t, Resource*);
-void renderResourceLoadImage(RenderResource*, uint16_t*, uint16_t, uint16_t);
-void renderResourceLoadFont(RenderResource*);
+void renderResourceNew(RenderResource*, uint8_t, Resource*, uint16_t, uint16_t);
+void renderResourceSetLoadFunction(RenderResource*, void (struct renderResource*));
+void renderResourceLoadImage(RenderResource*);
+//void renderResourceLoadFont(RenderResource*);
 //void renderResourceUnload(RenderResource*);
 
 /*
@@ -73,7 +76,7 @@ typedef struct renderObject
     //float mScale;
 
     //Display text (for text object only)
-    uint8_t mText[MAX_TEXT_LENGTH];
+    //uint8_t mText[MAX_TEXT_LENGTH];
 
     //next and previous RenderObject
     struct renderObject* nextObj;
@@ -92,18 +95,19 @@ typedef struct renderObject
     void (*setVisible)(struct renderObject*, uint8_t);
 
     //Sets text (for text object only)
-    void (*setText)(struct renderObject*, char[]);
+    //void (*setText)(struct renderObject*, char[]);
 
     //Renders object (should be called by RenderManager only).
-    void (*render)(struct renderObject*, TFT_t*);
+    //void (*render)(struct renderObject*, TFT_t*);
 }RenderObject;
 
 //constructor of RenderObject
 void renderObjectNew(RenderObject*, RenderResource*, int16_t, int16_t, uint8_t);
 void renderObjectSetPos(RenderObject*, int16_t, int16_t);
 void renderObjectSetColor(RenderObject*, uint16_t);
-void renderObjectSetText(RenderObject*, char[]);
-void renderObjectRender(RenderObject*, TFT_t*);
+void renderObjectSetVisible(RenderObject*, uint8_t);
+//void renderObjectSetText(RenderObject*, char[]);
+//void renderObjectRender(RenderObject*, TFT_t*);
 
 /*
     RenderManager class, manages RenderResource and RenderObject objects.
@@ -125,9 +129,9 @@ typedef struct renderManager
     RenderResource* (*findRenderResourceByName)(struct renderManager*, char[]); 
 
     //Adds Image type RenderResource, whose base class is also registered in the ResourceManager.
-    void (*addImage)(struct renderManager*, ResourceManager*, char[], uint16_t*, uint16_t, uint16_t);
+    void (*addImage)(struct renderManager*, ResourceManager*, char[], void (struct renderResource*), uint16_t, uint16_t);
     //Adds Text type RenderResource (aka. font), whose base class is also registered in the ResourceManager.
-    void (*addFont)(struct renderManager*, ResourceManager*, char[]);
+    //void (*addFont)(struct renderManager*, ResourceManager*, char[]);
 
     //Adds RenderObject to the render list, which is to be rendered.
     void (*addObject)(struct renderManager*, RenderObject*);
@@ -137,33 +141,35 @@ typedef struct renderManager
     void (*copy)(struct renderManager*, RenderObject*, int16_t, int16_t, uint16_t, uint16_t);
     void (*readDown)(struct renderManager*, RenderObject*);
     void (*readUp)(struct renderManager*, RenderObject*);
+    void (*readFull)(struct renderManager*, RenderObject*);
     
     //Clear the current render list.
     void (*clear)(struct renderManager*);
     //Update the screen.
     void (*update)(struct renderManager*, RenderObject*);
     //Render all texts in the linked list (IN ORDER).
-    void (*renderAllText)(struct renderManager*);
+    //void (*renderAllText)(struct renderManager*);
     //Render all objects in the linked list (IN ORDER).
-    void (*renderAllObject)(struct renderManager*);
+    //void (*renderAllObject)(struct renderManager*);
 }RenderManager;
 
 //constructor of RenderManager
 void renderManagerNew(RenderManager*);
 RenderResource* renderManagerFindRenderResourceByID(RenderManager*, uint8_t); 
 RenderResource* renderManagerFindRenderResourceByName(RenderManager*, char[]); 
-void renderManagerAddImage(RenderManager*, ResourceManager*, char[], uint16_t*, uint16_t, uint16_t);
-void renderManagerAddFont(RenderManager*, ResourceManager*, char[]);
+void renderManagerAddImage(RenderManager*, ResourceManager*, char[], void (struct renderResource*), uint16_t, uint16_t);
+//void renderManagerAddFont(RenderManager*, ResourceManager*, char[]);
 void renderManagerAddObject(RenderManager*, RenderObject*);   
 void renderManagerRemoveObject(RenderManager*, RenderObject*); 
 
 void renderManagerCopy(RenderManager*, RenderObject*, int16_t, int16_t, uint16_t, uint16_t);
 void renderManagerReadDown(RenderManager*, RenderObject*);
 void renderManagerReadUp(RenderManager*, RenderObject*);
+void renderManagerReadFull(RenderManager*, RenderObject*);
 
 void renderManagerClear(RenderManager*);
 void renderManagerUpdate(RenderManager*, RenderObject*);
-void renderManagerRenderAllText(RenderManager*);
-void renderManagerRenderAllObject(RenderManager*);
+//void renderManagerRenderAllText(RenderManager*);
+//void renderManagerRenderAllObject(RenderManager*);
 
 #endif /* _RENDERMANAGER_H_ */

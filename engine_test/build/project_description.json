@@ -1,7 +1,7 @@
 {
     "version":            "1.1",
     "project_name":       "ENGINE_TEST",
-    "project_version":    "d3006df-dirty",
+    "project_version":    "d4e8c71-dirty",
     "project_path":       "/Users/richard/Documents/2024電機營/GameEngine/engine_test",
     "idf_path":           "/Users/richard/esp/v5.2.1/esp-idf",
     "build_dir":          "/Users/richard/Documents/2024電機營/GameEngine/engine_test/build",

@@ -1,19 +1,16 @@
 #include <iostream>
 using namespace std;
 
-struct dec
-{
-    int* list[100];
-};
-
-void load(struct dec* obj)
-{
-    *(obj->list[0]) = 5;
-}
-
 int main()
 {
-    struct dec test;
-    load(&test);
-    cout << *(test.list[0]);
+    /*
+    for(int i = 0; i < 20; i++)
+    {
+        cout << "uint16_t x" << i << "[256] = {};" << endl;
+        cout << "x" << i << "[255] = 1;" << endl;
+    }
+    */
+    int g[100] = {0};
+    //g[100] = 6;
+    cout << *(g+100);
 }

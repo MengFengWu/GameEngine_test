@@ -1203,9 +1203,42 @@ void lcdDrawPNG(TFT_t *dev, uint16_t x, uint16_t y, const uint16_t * PNG, int wi
 
 	for(int y = 0; y < _height; y++){
 		for(int x = 0;x < _width; x++){;
+			//printf("%d ", PNG[x+y*_width]);
 			colors[x] = PNG[x+y*_width];
 		}
+		//printf("\n");
 		lcdDrawMultiPixels(dev, _cols, y+_rows, _width, colors);
+	}
+	free(colors);
+
+	dev->_offsetx = x0;
+	dev->_offsety = y0;
+	return;
+}
+
+
+void lcdDrawFull(TFT_t *dev, uint16_t x, uint16_t y, const uint16_t * PNG, int width, int height){
+	uint16_t x0 = dev->_offsetx;
+	uint16_t y0 = dev->_offsety;
+	dev->_offsetx = x;
+	dev->_offsety = y;
+
+	uint16_t _width = width;
+	uint16_t _cols = 0;
+
+	uint16_t _height = height;
+	uint16_t _rows = 0;
+
+	uint16_t *colors = (uint16_t*)calloc(_width, sizeof(uint16_t));
+
+	for(int y1 = 0; y1 < _height; y1++){
+		for(int x1 = 0; x1 < _width; x1++){
+			printf("%d ", PNG[x+x1+(y+y1)*240]);
+			colors[x1] = PNG[x+x1+(y+y1)*240];
+		}
+		//printf("%s", "Now rendering row: ");
+		printf("%d\n", y);
+		lcdDrawMultiPixels(dev, _cols, y1+_rows, _width, colors);
 	}
 	free(colors);
 
